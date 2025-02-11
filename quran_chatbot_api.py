@@ -77,5 +77,5 @@ def get_verse(request: QueryRequest):
 
 # Run the app using Uvicorn
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8000))  # Use Render's assigned port or default to 8000
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    port = int(os.getenv("PORT", 8000))  # Fetch the PORT env variable
+    uvicorn.run(app, host="0.0.0.0", port=port)  # Use the specified port
