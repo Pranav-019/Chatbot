@@ -77,5 +77,7 @@ def get_verse(request: QueryRequest):
 
 # Run the app using Uvicorn
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8000))  # Fetch the PORT env variable
-    uvicorn.run(app, host="0.0.0.0", port=port)  # Use the specified port
+    # Get the port from the environment variable, default to 8000 if not found
+    port = int(os.getenv("PORT", 8000))
+    print(f"Starting the app on port {port}")  # Debug log
+    uvicorn.run(app, host="0.0.0.0", port=port)  # Bind to all interfaces and dynamic port
