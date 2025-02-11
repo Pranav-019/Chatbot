@@ -1,8 +1,10 @@
+import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import pandas as pd
 from sentence_transformers import SentenceTransformer, util
 import torch
+import os
 
 # Load the dataset and generate embeddings once when the server starts
 file_path = "en.yusufali.csv"
@@ -75,6 +77,5 @@ def get_verse(request: QueryRequest):
 
 # Run the app using Uvicorn
 if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.getenv("PORT", 8000))  # Use Render's assigned port or default to 8000
+    uvicorn.run(app, host="0.0.0.0", port=port)
