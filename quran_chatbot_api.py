@@ -1,6 +1,4 @@
-import uvicorn
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from flask import Flask, request, jsonify
 import pandas as pd
 from sentence_transformers import SentenceTransformer, util
 import torch
@@ -16,7 +14,6 @@ model = SentenceTransformer('all-MiniLM-L6-v2')
 # Generate embeddings for all verses (cache them in the df)
 df['embedding'] = df['Text'].apply(lambda x: model.encode(x, convert_to_tensor=True))
 
-
 def get_most_relevant_verse(query, top_n=1):
     """Find the most relevant verse for a given query."""
     query_embedding = model.encode(query, convert_to_tensor=True)
@@ -24,11 +21,9 @@ def get_most_relevant_verse(query, top_n=1):
     top_idx = torch.tensor(similarities).topk(top_n).indices.tolist()
     return df.iloc[top_idx][['Surah', 'Ayah', 'Text']]
 
-
-def generate_advice(surah, ayah, verse_text):
+def generate_advice(verse_text):
     """
     Generates a short piece of advice based on the verse's content.
-    You can later replace this with a more advanced NLP-based analysis.
     """
     if "patience" in verse_text.lower():
         return "Patience is a virtue. Stay strong and trust that things will improve with time."
@@ -43,41 +38,33 @@ def generate_advice(surah, ayah, verse_text):
     else:
         return "Reflect on this verse deeply. It holds wisdom that may guide you in unexpected ways."
 
+# Flask app
+app = Flask(__name__)
 
-# FastAPI app
-app = FastAPI()
+@app.route("/get_verse", methods=["POST"])
+def get_verse():
+    data = request.get_json()
+    query = data.get("query", "")
 
+    if not query:
+        return jsonify({"error": "Query cannot be empty"}), 400
 
-# Pydantic model for the input query
-class QueryRequest(BaseModel):
-    query: str
-
-
-# Endpoint to get the most relevant verse for a given query
-@app.post("/get_verse")
-def get_verse(request: QueryRequest):
-    query = request.query
     result = get_most_relevant_verse(query)
 
     if result.empty:
-        raise HTTPException(status_code=404, detail="No relevant verse found")
+        return jsonify({"error": "No relevant verse found"}), 404
 
     surah = int(result.iloc[0]['Surah'])
     ayah = int(result.iloc[0]['Ayah'])
     verse_text = result.iloc[0]['Text']
-    advice = generate_advice(surah, ayah, verse_text)
+    advice = generate_advice(verse_text)
 
-    # Convert any numpy types to native Python types
     response = {
         "description": f"Surah {surah}, Ayah {ayah}: {verse_text}",
         "advice": advice
     }
-    return response
+    return jsonify(response)
 
-
-# Run the app using Uvicorn
-if __name__ == "__main__":
-    # Get the port from the environment variable, default to 8000 if not found
-    port = int(os.getenv("PORT", 80))
-    print(f"Starting the app on port {port}")  # Debug log
-    uvicorn.run(app, host="0.0.0.0", port=port)  # Bind to all interfaces and dynamic port
+# Run the app
+if _name_ == "_main_":
+    app.run(debug=True)
